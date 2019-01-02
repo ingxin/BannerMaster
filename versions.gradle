@@ -1,0 +1,22 @@
+/**
+ * 版本管理
+ */
+
+//创建空映射(key-value形式，字典)
+def build_versions = [:]
+
+build_versions.min_sdk = 21
+build_versions.target_sdk = 27
+build_versions.compile_sdk = 27
+
+//将编译信息添加到ext
+ext.build_versions = build_versions
+
+//依赖版本
+def deps = [:]
+deps.appcompat = 'com.android.support:appcompat-v7:27.1.1'
+
+//依赖添加到ext
+ext.deps = deps
+
+
