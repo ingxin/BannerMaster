@@ -12,6 +12,8 @@ dependencies {
 
 #### 开始使用
 ```
+//...与viewPager一样，只是多了以下设置
+
 //设置自动播放间隔时间，如果小于5000表示不自动播放，默认为0
 banner.setAutoInterval(5000);
 //设置是否循环
