@@ -10,6 +10,9 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.Interpolator;
+
+import java.lang.reflect.Field;
 
 /**
  * 可自动播放的banner
@@ -21,9 +24,10 @@ public class Banner extends ViewPager {
     //自动翻页间隔阈值
     public static final long INTERVAL_THRESHOLD = 5000;
     //延迟页面变化时间
-    public static final int DELAYED_CHANGE = 300;
+    public static final int DELAYED_CHANGE = 250;
 
     private Handler handler = new Handler();
+
     //是否在循环
     private boolean isLoop;
     //处于触摸中
@@ -60,12 +64,19 @@ public class Banner extends ViewPager {
      */
     private boolean autoSmoothEnable = true;
 
+    /**
+     * 滑动
+     */
+    private ScrollerCustomDuration mScroller = null;
+
     public Banner(@NonNull Context context) {
         super(context);
+        postInitViewPager();
     }
 
     public Banner(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        postInitViewPager();
     }
 
     /**
@@ -170,10 +181,20 @@ public class Banner extends ViewPager {
     }
 
     /**
+     * 设置滑动参数系数，默认系数为1，系数越高滑动速度慢
+     * @param scrollFactor 系数
+     */
+    public void setScrollDurationFactor(double scrollFactor) {
+        if (mScroller != null) {
+            mScroller.setScrollDurationFactor(scrollFactor);
+        }
+    }
+
+    /**
      * 开始自动翻页，只有{@link #autoInterval}大于{@link #INTERVAL_THRESHOLD}
      * 当改变了adapter数据后应该调用该方法
      */
-    public void auto() {
+    public void autoPay() {
         handler.removeCallbacks(loopTask);
         if (isCyclic && getAdapter() != null && getAdapter().getCount() >= 3) {
             setCurrentItem(1, false);
@@ -206,6 +227,23 @@ public class Banner extends ViewPager {
             proxyOnPageChangeListener = new ProxyOnPageChangeListener();
         }
         return proxyOnPageChangeListener;
+    }
+
+    /**
+     * 绑定滑动Scroller
+     */
+    private void postInitViewPager() {
+        try {
+            Field scroller = ViewPager.class.getDeclaredField("mScroller");
+            scroller.setAccessible(true);
+            Field interpolator = ViewPager.class.getDeclaredField("sInterpolator");
+            interpolator.setAccessible(true);
+
+            mScroller = new ScrollerCustomDuration(getContext(), (Interpolator) interpolator.get(null));
+            scroller.set(this, mScroller);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -247,6 +285,8 @@ public class Banner extends ViewPager {
         //设置循环模式
         ((Adapter) adapter).setCyclicEnable(isCyclic);
         super.setAdapter(adapter);
+        super.removeOnPageChangeListener(getProxyOnPageChangeListener());
+        super.addOnPageChangeListener(getProxyOnPageChangeListener());
         //设置了adapter后不能再改变循环模式
         canSetCyclic = false;
     }
@@ -275,8 +315,6 @@ public class Banner extends ViewPager {
     public void addOnPageChangeListener(@NonNull OnPageChangeListener listener) {
         //屏蔽原有逻辑，交给代理处理
         this.onPageChangeListener = listener;
-        super.removeOnPageChangeListener(getProxyOnPageChangeListener());
-        super.addOnPageChangeListener(getProxyOnPageChangeListener());
     }
 
     /**
@@ -290,7 +328,6 @@ public class Banner extends ViewPager {
          * @param positionOffset       position+1位置view偏移量[0,1]百分比，0没有展示，1完全展示出来
          * @param positionOffsetPixels 与positionOffset相对应的像素偏移量
          */
-        @SuppressWarnings("StatementWithEmptyBody")
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             if (onPageChangeListener == null) {
@@ -323,9 +360,6 @@ public class Banner extends ViewPager {
 
         @Override
         public void onPageSelected(int position) {
-            if (onPageChangeListener == null) {
-                return;
-            }
             if (isCyclic) {
                 handler.removeCallbacks(toFirstTask);
                 handler.removeCallbacks(toLastTask);
@@ -337,11 +371,15 @@ public class Banner extends ViewPager {
                     } else if (position == count - 1) {
                         handler.postDelayed(toFirstTask, DELAYED_CHANGE);
                     } else {
-                        onPageChangeListener.onPageSelected(position - 1);
+                        if (onPageChangeListener != null) {
+                            onPageChangeListener.onPageSelected(position - 1);
+                        }
                     }
                 }
             } else {
-                onPageChangeListener.onPageSelected(position);
+                if (onPageChangeListener != null) {
+                    onPageChangeListener.onPageSelected(position);
+                }
             }
         }
 

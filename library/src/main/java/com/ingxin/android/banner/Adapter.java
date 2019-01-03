@@ -73,22 +73,25 @@ public abstract class Adapter<T> extends PagerAdapter {
     @NonNull
     @Override
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
+        View view;
         if (isCyclic) {
             if (position == 0) {
                 int size = items.size();
                 T item = items.get(size - 1);
-                return instantiateItem(container, item, size - 1);
+                view = getItemView(container, item, size - 1);
             } else if (position == getCount() - 1) {
                 T item = items.get(0);
-                return instantiateItem(container, item, 0);
+                view = getItemView(container, item, 0);
             } else {
                 T item = items.get(position - 1);
-                return instantiateItem(container, item, position - 1);
+                view = getItemView(container, item, position - 1);
             }
         } else {
             T item = items.get(position);
-            return instantiateItem(container, item, position);
+            view = getItemView(container, item, position);
         }
+        container.addView(view);
+        return view;
     }
 
     @Override
@@ -104,6 +107,6 @@ public abstract class Adapter<T> extends PagerAdapter {
     /**
      * see{@link #instantiateItem(ViewGroup, int)}
      */
-    public abstract View instantiateItem(@NonNull ViewGroup container, T item, int position);
+    public abstract View getItemView(@NonNull ViewGroup container, @NonNull T item, int position);
 
 }
