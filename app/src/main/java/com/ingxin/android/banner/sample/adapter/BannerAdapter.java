@@ -11,6 +11,7 @@ import com.ingxin.android.banner.sample.R;
 import com.ingxin.android.banner.sample.pojo.BannerItem;
 
 public class BannerAdapter extends Adapter<BannerItem> {
+    @NonNull
     @Override
     public View getItemView(@NonNull ViewGroup container, @NonNull BannerItem item, int position) {
         View view = LayoutInflater.from(container.getContext())

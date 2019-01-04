@@ -107,6 +107,7 @@ public abstract class Adapter<T> extends PagerAdapter {
     /**
      * see{@link #instantiateItem(ViewGroup, int)}
      */
+    @NonNull
     public abstract View getItemView(@NonNull ViewGroup container, @NonNull T item, int position);
 
 }

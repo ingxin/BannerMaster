@@ -166,7 +166,7 @@ public class Banner extends ViewPager {
     }
 
     /**
-     * 设置滑动参数系数，默认系数为1，系数越高滑动速度慢
+     * 设置滑动参数系数，默认系数为{@link #mScrollFactor}，系数越高滑动速度越慢
      *
      * @param scrollFactor 系数
      */
