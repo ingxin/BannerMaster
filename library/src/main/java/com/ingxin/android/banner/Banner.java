@@ -7,7 +7,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Interpolator;
@@ -19,55 +18,39 @@ import java.lang.reflect.Field;
  */
 public class Banner extends ViewPager {
 
-    private static final String TAG = Banner.class.getName();
-
     //自动翻页间隔阈值
-    public static final long INTERVAL_THRESHOLD = 5000;
-    //延迟页面变化时间
-    public static final int DELAYED_CHANGE = 250;
+    private static final long INTERVAL_THRESHOLD = 5000;
+    //延迟页面变化时间，优化首尾切换效果
+    private static final int DELAYED_CHANGE = 20;
 
-    private Handler handler = new Handler();
-
-    //是否在循环
-    private boolean isLoop;
-    //处于触摸中
-    private boolean onTouching;
+    //自动播放间隔
+    private long autoInterval;
+    //滑动系数，默认滑动系数为5
+    private double mScrollFactor = 5;
+    //自动翻页时时间间隔
+    private boolean isCyclic;
+    //自动翻页滑动模式，true:有滑动效果，false：没有滑动效果
+    private boolean autoSmoothEnable = true;
+    //页面变化的监听回调
+    private OnPageChangeListener onPageChangeListener;
 
     /**
      * 标记是否可以调用{@link #setCyclicEnable(boolean)}
      * 当调用了{@link #setAdapter(PagerAdapter)}后则不可再调用{@link #setCyclicEnable(boolean)}
      */
     private boolean canSetCyclic = true;
-
-    /**
-     * 页面变化的监听回调
-     */
-    private OnPageChangeListener onPageChangeListener;
-
-    /**
-     * 代理页面变化的监听回调
-     */
-    private ProxyOnPageChangeListener proxyOnPageChangeListener;
-
-    /**
-     * 自动播放间隔
-     */
-    private long autoInterval;
-
-    /**
-     * 自动翻页时时间间隔
-     */
-    private boolean isCyclic;
-
-    /**
-     * 自动翻页滑动模式，true:有滑动效果，false：没有滑动效果
-     */
-    private boolean autoSmoothEnable = true;
-
-    /**
-     * 滑动
-     */
+    //标记是否在首尾页面切换当中
+    private boolean inTask;
+    //是否在循环
+    private boolean isLoop;
+    //处于触摸中
+    private boolean onTouching;
+    //滑动Scroller
     private ScrollerCustomDuration mScroller = null;
+    //代理页面变化的监听回调
+    private ProxyOnPageChangeListener proxyOnPageChangeListener;
+    //内部handle
+    private Handler handler = new Handler();
 
     public Banner(@NonNull Context context) {
         super(context);
@@ -126,6 +109,7 @@ public class Banner extends ViewPager {
                 //循环模式个数至少为3
                 if (getCurrentItem() == count - 1) {
                     setCurrentItem(1, false);
+                    inTask = false;
                 }
             }
         }
@@ -143,6 +127,7 @@ public class Banner extends ViewPager {
                 int count = adapter.getCount();
                 if (getCurrentItem() == 0) {
                     setCurrentItem(count - 2, false);
+                    inTask = false;
                 }
             }
         }
@@ -182,9 +167,18 @@ public class Banner extends ViewPager {
 
     /**
      * 设置滑动参数系数，默认系数为1，系数越高滑动速度慢
+     *
      * @param scrollFactor 系数
      */
     public void setScrollDurationFactor(double scrollFactor) {
+        this.mScrollFactor = scrollFactor;
+        setScrollFactor(scrollFactor);
+    }
+
+    /**
+     * 设置滑动系数
+     */
+    private void setScrollFactor(double scrollFactor) {
         if (mScroller != null) {
             mScroller.setScrollDurationFactor(scrollFactor);
         }
@@ -246,6 +240,33 @@ public class Banner extends ViewPager {
         }
     }
 
+    @Override
+    public void computeScroll() {
+        super.computeScroll();
+        if (inTask) {
+            //正在页面切换当中
+            return;
+        }
+        if (!mScroller.computeScrollOffset() && mScroller.isFinished()) {
+            int currentItem = getCurrentItem();
+            if (isCyclic) {
+                Adapter adapter = getBannerAdapter();
+                if (adapter != null && adapter.getCount() > 0) {
+                    int count = adapter.getCount();
+                    handler.removeCallbacks(toFirstTask);
+                    handler.removeCallbacks(toLastTask);
+                    if (currentItem == 0) {
+                        inTask = true;
+                        handler.postDelayed(toLastTask, DELAYED_CHANGE);
+                    } else if (currentItem == count - 1) {
+                        inTask = true;
+                        handler.postDelayed(toFirstTask, DELAYED_CHANGE);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 获取BannerAdapter
      *
@@ -257,7 +278,6 @@ public class Banner extends ViewPager {
         if (adapter instanceof Adapter) {
             return (Adapter) adapter;
         }
-        Log.e(TAG, "Banner#getBannerAdapter is null");
         return null;
     }
 
@@ -268,7 +288,7 @@ public class Banner extends ViewPager {
         onTouching = action != MotionEvent.ACTION_UP && action != MotionEvent.ACTION_CANCEL;
         handler.removeCallbacks(loopTask);
         if (onTouching) {
-            Log.e(TAG, "onTouching");
+            setScrollFactor(1);
         } else {
             if (isLoop && canAuto()) {
                 handler.postDelayed(loopTask, autoInterval);
@@ -360,17 +380,14 @@ public class Banner extends ViewPager {
 
         @Override
         public void onPageSelected(int position) {
+            setScrollFactor(mScrollFactor);
             if (isCyclic) {
                 handler.removeCallbacks(toFirstTask);
                 handler.removeCallbacks(toLastTask);
                 Adapter adapter = getBannerAdapter();
                 if (adapter != null && adapter.getCount() > 0) {
                     int count = adapter.getCount();
-                    if (position == 0) {
-                        handler.postDelayed(toLastTask, DELAYED_CHANGE);
-                    } else if (position == count - 1) {
-                        handler.postDelayed(toFirstTask, DELAYED_CHANGE);
-                    } else {
+                    if (position != 0 && position != count - 1) {
                         if (onPageChangeListener != null) {
                             onPageChangeListener.onPageSelected(position - 1);
                         }

@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         banner.setAutoInterval(5000);
         banner.setCyclicEnable(true);
         //设置滑动系数
-        banner.setScrollDurationFactor(2.2);
+        banner.setScrollDurationFactor(5);
 
         //正常view pager 操作
         BannerAdapter adapter = new BannerAdapter();

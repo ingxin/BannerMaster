@@ -20,6 +20,5 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation deps.appcompat
-    implementation deps.glide
     implementation project(':library')
 }
