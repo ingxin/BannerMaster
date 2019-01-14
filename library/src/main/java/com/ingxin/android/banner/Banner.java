@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.animation.Interpolator;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 /**
  * 可自动播放的banner
@@ -27,7 +28,7 @@ public class Banner extends ViewPager {
     private long autoInterval;
     //滑动系数，默认滑动系数为5
     private double mScrollFactor = 5;
-    //自动翻页时时间间隔
+    //是否可以循环翻页
     private boolean isCyclic;
     //自动翻页滑动模式，true:有滑动效果，false：没有滑动效果
     private boolean autoSmoothEnable = true;
@@ -186,11 +187,14 @@ public class Banner extends ViewPager {
 
     /**
      * 开始自动翻页，只有{@link #autoInterval}大于{@link #INTERVAL_THRESHOLD}
-     * 当改变了adapter数据后应该调用该方法
+     * 当调用了{@link PagerAdapter#notifyDataSetChanged()}or{@link Adapter#setData(List)}方法后应该调此方法
      */
     public void autoPay() {
         handler.removeCallbacks(loopTask);
-        if (isCyclic && getAdapter() != null && getAdapter().getCount() >= 3) {
+        //重新获取是否可以循环的状态
+        Adapter adapter = getBannerAdapter();
+        isCyclic = adapter != null && adapter.isCyclic();
+        if (isCyclic && adapter.getCount() >= 3) {
             setCurrentItem(1, false);
         }
         if (canAuto()) {
@@ -210,7 +214,8 @@ public class Banner extends ViewPager {
      * 根据时间判断是否能自动翻页
      */
     private boolean canAuto() {
-        return autoInterval >= INTERVAL_THRESHOLD;
+        Adapter adapter = getBannerAdapter();
+        return adapter != null && adapter.getCount() > 1 && autoInterval >= INTERVAL_THRESHOLD;
     }
 
     /**

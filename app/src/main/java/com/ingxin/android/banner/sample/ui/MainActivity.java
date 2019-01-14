@@ -2,6 +2,7 @@ package com.ingxin.android.banner.sample.ui;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 
 import com.ingxin.android.banner.Banner;
 import com.ingxin.android.banner.sample.R;
@@ -14,6 +15,8 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private Banner banner;
+    private BannerAdapter adapter;
+    private List<BannerItem> bannerItemList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +24,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         banner = (Banner) findViewById(R.id.banner);
         loadData();
+
+        findViewById(R.id.remove).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (bannerItemList.size() > 1) {
+                    bannerItemList.remove(bannerItemList.size() - 1);
+                    adapter.setData(bannerItemList);
+                    adapter.notifyDataSetChanged();
+                    banner.autoPay();
+                }
+
+            }
+        });
+
     }
 
     private void loadData() {
@@ -28,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         BannerItem item2 = new BannerItem(R.mipmap.pic2);
         BannerItem item3 = new BannerItem(R.mipmap.pic3);
 
-        List<BannerItem> bannerItemList = new ArrayList<>();
+        bannerItemList = new ArrayList<>();
         bannerItemList.add(item1);
         bannerItemList.add(item2);
         bannerItemList.add(item3);
@@ -40,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         banner.setScrollDurationFactor(5);
 
         //正常view pager 操作
-        BannerAdapter adapter = new BannerAdapter();
+        adapter = new BannerAdapter();
         adapter.setData(bannerItemList);
         banner.setAdapter(adapter);
 

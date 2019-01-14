@@ -38,7 +38,7 @@ public abstract class Adapter<T> extends PagerAdapter {
     }
 
     /**
-     * 设置banner循环模式
+     * 设置banner循环模式，当item个数小于2时强制关闭循环模式{@link #getCount()}
      *
      * @param enable true表示可以无限循环，false则正常模式
      */
@@ -62,8 +62,10 @@ public abstract class Adapter<T> extends PagerAdapter {
 
     @Override
     final public int getCount() {
-        if (items.isEmpty()) {
-            return 0;
+        if (items.size() < 2) {
+            //item个数小于2强制关闭循环模式
+            isCyclic = false;
+            return items.size();
         } else {
             int count = items.size();
             return isCyclic ? count + 2 : count;
