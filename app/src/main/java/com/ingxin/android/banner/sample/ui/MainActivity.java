@@ -58,10 +58,11 @@ public class MainActivity extends AppCompatActivity {
 
         //正常view pager 操作
         adapter = new BannerAdapter();
-        adapter.setData(bannerItemList);
         banner.setAdapter(adapter);
 
         //准备完成，开始显示
+        adapter.setData(bannerItemList);
+        adapter.notifyDataSetChanged();
         banner.autoPay();
     }
 

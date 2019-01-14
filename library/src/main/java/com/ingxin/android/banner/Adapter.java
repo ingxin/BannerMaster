@@ -52,7 +52,7 @@ public abstract class Adapter<T> extends PagerAdapter {
      * @return true表示可以无限循环，false表示正常
      */
     public boolean isCyclic() {
-        return isCyclic;
+        return isCyclic && items.size() > 1;
     }
 
     @Override
@@ -63,8 +63,7 @@ public abstract class Adapter<T> extends PagerAdapter {
     @Override
     final public int getCount() {
         if (items.size() < 2) {
-            //item个数小于2强制关闭循环模式
-            isCyclic = false;
+            //item个数小于2强制不使用循环模式
             return items.size();
         } else {
             int count = items.size();
