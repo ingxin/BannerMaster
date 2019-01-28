@@ -321,8 +321,12 @@ public class Banner extends ViewPager {
         super.onVisibilityChanged(changedView, visibility);
         handler.removeCallbacks(loopTask);
         isLoop = visibility == VISIBLE;
-        if (isLoop && canAuto()) {
-            handler.postDelayed(loopTask, autoInterval);
+        if (isLoop) {
+            int currentItem = getCurrentItem();
+            setCurrentItem(currentItem,false);
+            if (canAuto()) {
+                handler.postDelayed(loopTask, autoInterval);
+            }
         }
     }
 
@@ -331,7 +335,7 @@ public class Banner extends ViewPager {
         super.onDetachedFromWindow();
         /*
          *当view 被移除窗口，如果执行了onAttachedToWindow将会触发onVisibilityChanged
-         *而onDetachedFromWindow不会触发onVisibilityChanged,所以此时应该回收支援
+         *而onDetachedFromWindow不会触发onVisibilityChanged,所以此时应该停止循环
          */
         stopPlay();
     }
