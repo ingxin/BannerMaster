@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.ingxin:BannerMaster:v1.2.0'
+    implementation 'com.github.ingxin:BannerMaster:v1.4.0'
 }
 ```
 2. 继承adapter
